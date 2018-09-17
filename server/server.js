@@ -4,6 +4,7 @@ const express = require('express')
 const socketIO = require('socket.io')
 
 const {generateMessage, generateLocationMessage} = require('./utils/message')
+const {isRealString} = require('./utils/validation')
 
 const publicPath = path.join(__dirname, '../public')
 
@@ -19,9 +20,23 @@ io.on('connection', (socket) => {
 
   console.log('New user connected')
 
-  socket.emit('newMessage', generateMessage('Admin', 'Welcome to TribalChat!'))
+  socket.on('join', (params, callback) => {
 
-  socket.broadcast.emit('newMessage', generateMessage('Admin', 'New user joined'))
+    if (!isRealString(params.name) || !isRealString(params.room)) {
+
+      callback('Name and room name are required.')
+
+    }
+
+    socket.join(params.room)
+
+    socket.emit('newMessage', generateMessage('Admin', 'Welcome to TribalChat!'))
+
+    socket.broadcast.to(params.room).emit('newMessage', generateMessage('Admin', `${params.name} has joined.`))
+
+    callback()
+
+  })
 
   socket.on('createMessage', (message, callback) => {
 
